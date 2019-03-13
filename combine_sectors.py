@@ -27,20 +27,13 @@ def RunSectors(tess_dir = '/Users/james/Desktop/tess/', run_dir = '/Users/james/
 
     should probably be combined with run_sector.py.... but oh well for now!
     '''
-    sectors = ['sector001', 'sector002', 'sector003', 'sector004', 'sector005', 'sector006']
+
+    sectors = ['sector001', 'sector002', 'sector003', 'sector004', 'sector005', 'sector006', 'sector007']
 
     # just in case glob wants to re-order things, be sure grab them in Sector order
-    sect1 = glob(tess_dir + sectors[0] + '/*.fits', recursive=True)
-    sect2 = glob(tess_dir + sectors[1] + '/*.fits', recursive=True)
-    sect3 = glob(tess_dir + sectors[2] + '/*.fits', recursive=True)
-    sect4 = glob(tess_dir + sectors[3] + '/*.fits', recursive=True)
-    sect5 = glob(tess_dir + sectors[4] + '/*.fits', recursive=True)
-    sect6 = glob(tess_dir + sectors[5] + '/*.fits', recursive=True)
-
-    files = sect1 + sect2 + sect3 + sect4 + sect5 + sect6
-    # make into an array for looping later!
-    s_lens = [len(sect1), len(sect2), len(sect3), len(sect4), len(sect5), len(sect6)]
-    # print(s_lens, len(files))
+    files = []
+    for k in range(len(sectors)):
+        files = files + glob(tess_dir + sectors[k] + '/*.fits', recursive=True)
 
     # get the unique object IDs (NOT the simplest way, but matches the next step)
     obj = pd.Series(files).str.split('-', expand=True).groupby(by=2).count().index
@@ -225,3 +218,19 @@ if __name__ == "__main__":
       $ python analysis.py
     '''
     RunSectors()
+
+
+
+
+### junk code i probably dont need
+# sect1 = glob(tess_dir + sectors[0] + '/*.fits', recursive=True)
+# sect2 = glob(tess_dir + sectors[1] + '/*.fits', recursive=True)
+# sect3 = glob(tess_dir + sectors[2] + '/*.fits', recursive=True)
+# sect4 = glob(tess_dir + sectors[3] + '/*.fits', recursive=True)
+# sect5 = glob(tess_dir + sectors[4] + '/*.fits', recursive=True)
+# sect6 = glob(tess_dir + sectors[5] + '/*.fits', recursive=True)
+#
+# files = sect1 + sect2 + sect3 + sect4 + sect5 + sect6
+# # make into an array for looping later!
+# s_lens = [len(sect1), len(sect2), len(sect3), len(sect4), len(sect5), len(sect6)]
+# print(s_lens, len(files))
