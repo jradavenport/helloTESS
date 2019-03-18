@@ -21,7 +21,7 @@ matplotlib.rcParams.update({'font.family':'serif'})
 ftype = '.pdf'
 
 
-def RunSectors(tess_dir = '/Users/james/Desktop/tess/', run_dir = '/Users/james/Desktop/helloTESS/'):
+def RunSectors(tess_dir = '/Users/james/Desktop/tess/', run_dir = '/Users/james/Desktop/helloTESS/', clobber=False):
     '''
     Do some simplier things on stars that are observed in mulitple sectors
 
@@ -47,16 +47,17 @@ def RunSectors(tess_dir = '/Users/james/Desktop/tess/', run_dir = '/Users/james/
 
     o5 = np.where((Nobj > 3))[0] # was named "o5" because originally wanted Over 5 observations. Now pick other N
 
+    print(str(len(o5)) + ' objects with Nobs > 3 Sectors')
     for k in range(0, len(o5)):
         print(k, obj[o5][k])
         files_k = pd.Series(files)[np.where((pd.Series(files).str.split('-', expand=True)[2] == obj[o5][k]))[0]].values
 
-        rot_out_k = MultiSector(files_k)
+        rot_out_k = MultiSector(files_k, clobber=clobber)
         if k==0:
             rot_out = rot_out_k
         else:
             rot_out = pd.concat([rot_out, rot_out_k], ignore_index=True, sort=False)
-    rot_out.o_csv(run_dir + 'longerP_flare_out.csv')
+    rot_out.to_csv(run_dir + 'longerP_flare_out.csv')
     return
 
 
