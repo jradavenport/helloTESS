@@ -40,7 +40,7 @@ ftype = '.pdf'
 # print(s_lens, len(files))
 
 
-def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/', run_dir = '/Users/james/Desktop/helloTESS/'):
+def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/', run_dir = '/Users/james/Desktop/helloTESS/', clobber=False):
     '''
     Run the basic set of tools on every light curve
 
@@ -94,18 +94,20 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/', run_dir = '/U
             # do a running median for a basic smooth
             smo = df_tbl['PDCSAP_FLUX'][AOK].rolling(128, center=True).median()
             med = np.nanmedian(smo)
+            Smed = np.nanmedian(tbl['SAP_FLUX'][AOK])
 
             # make an output plot for every file
-            plt.close() # just in case anything is open...
-            plt.figure(figsize=(12,9))
-            plt.errorbar(tbl['TIME'][AOK], tbl['PDCSAP_FLUX'][AOK]/med, yerr=tbl['PDCSAP_FLUX_ERR'][AOK]/med,
-                         linestyle=None, alpha=0.25, label='PDC_FLUX')
-            plt.plot(tbl['TIME'][AOK], smo/med, label='128pt MED')
+            figname = run_dir + 'figures/' + sector + '/' + files_i[k].split('/')[-1] + '.jpeg' #run_dir + 'figures/longerP/' + TICs[0].split('-')[2] + '.jpeg'
+            makefig = ((not os.path.exists(figname)) | clobber)
 
-            Smed = np.nanmedian(tbl['SAP_FLUX'][AOK])
-            plt.errorbar(tbl['TIME'][AOK], tbl['SAP_FLUX'][AOK]/Smed, yerr=tbl['SAP_FLUX_ERR'][AOK]/Smed,
-                         linestyle=None, alpha=0.25, label='SAP_FLUX')
+            if makefig:
+                plt.figure(figsize=(12,9))
+                plt.errorbar(tbl['TIME'][AOK], tbl['PDCSAP_FLUX'][AOK]/med, yerr=tbl['PDCSAP_FLUX_ERR'][AOK]/med,
+                             linestyle=None, alpha=0.25, label='PDC_FLUX')
+                plt.plot(tbl['TIME'][AOK], smo/med, label='128pt MED')
 
+                plt.errorbar(tbl['TIME'][AOK], tbl['SAP_FLUX'][AOK]/Smed, yerr=tbl['SAP_FLUX_ERR'][AOK]/Smed,
+                             linestyle=None, alpha=0.25, label='SAP_FLUX')
 
             # require at least 1000 good datapoints for analysis
             if sum(AOK) > 1000:
@@ -125,12 +127,13 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/', run_dir = '/U
                         FL_f0 = np.append(FL_f0, med)
                         FL_f1 = np.append(FL_f1, np.nanmax(tbl['PDCSAP_FLUX'][AOK][SOK][(FL[0][j]):(FL[1][j]+1)]))
 
-                if np.size(FL) > 0:
-                    for j in range(len(FL[0])):
-                        plt.scatter(tbl['TIME'][AOK][SOK][(FL[0][j]):(FL[1][j]+1)],
-                                    tbl['PDCSAP_FLUX'][AOK][SOK][(FL[0][j]):(FL[1][j]+1)] / med, color='r',
-                                    label='_nolegend_')
-                    plt.scatter([],[], color='r', label='Flare?')
+                if makefig:
+                    if np.size(FL) > 0:
+                        for j in range(len(FL[0])):
+                            plt.scatter(tbl['TIME'][AOK][SOK][(FL[0][j]):(FL[1][j]+1)],
+                                        tbl['PDCSAP_FLUX'][AOK][SOK][(FL[0][j]):(FL[1][j]+1)] / med, color='r',
+                                        label='_nolegend_')
+                        plt.scatter([],[], color='r', label='Flare?')
 
 
 
@@ -148,8 +151,9 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/', run_dir = '/U
 
                 if np.nanmax(power) > 0.2:
                     LSmodel = LS.model(df_tbl['TIME'][AOK][SOK], best_frequency)
-                    plt.plot(df_tbl['TIME'][AOK][SOK], LSmodel,
-                             label='L-S P='+format(1./best_frequency, '6.3f')+'d, pk='+format(np.nanmax(power), '6.3f'))
+                    if makefig:
+                        plt.plot(df_tbl['TIME'][AOK][SOK], LSmodel,
+                                 label='L-S P='+format(1./best_frequency, '6.3f')+'d, pk='+format(np.nanmax(power), '6.3f'))
 
 
                 # ACF w/ Exoplanet package
@@ -160,7 +164,7 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/', run_dir = '/U
                     ACF_1dt[k] = acf['peaks'][0]['period']
                     ACF_1pk[k] = acf['autocorr'][1][np.where((acf['autocorr'][0] == acf['peaks'][0]['period']))[0]][0]
 
-                if ACF_1dt[k] > 0:
+                if (ACF_1dt[k] > 0) & makefig:
                     plt.plot(tbl['TIME'][AOK][SOK],
                              np.nanstd(smo[SOK]/med) * ACF_1pk[k] * np.sin(tbl['TIME'][AOK][SOK] / ACF_1dt[k] * 2 * np.pi) + 1,
                              label = 'ACF=' + format(ACF_1dt[k], '6.3f') + 'd, pk=' + format(ACF_1pk[k], '6.3f'), lw=2, alpha=0.7)
@@ -168,12 +172,13 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/', run_dir = '/U
 
                 # here is where a simple Eclipse (EB) finder goes
                 EE = EasyE(smo[SOK]/med, df_tbl['PDCSAP_FLUX_ERR'][AOK][SOK]/med, N1=5, N2=3, N3=5)
-                if np.size(EE) > 0:
-                    for j in range(len(EE[0])):
-                        plt.scatter(tbl['TIME'][AOK][SOK][(EE[0][j]):(EE[1][j]+1)],
-                                    smo[SOK] [(EE[0][j]):(EE[1][j]+1)] / med,
-                                    color='k', marker='s', s=5, alpha=0.75, label='_nolegend_')
-                    plt.scatter([],[], color='k', marker='s', s=5, alpha=0.75, label='Ecl?')
+                if (np.size(EE) > 0):
+                    if makefig:
+                        for j in range(len(EE[0])):
+                            plt.scatter(tbl['TIME'][AOK][SOK][(EE[0][j]):(EE[1][j]+1)],
+                                        smo[SOK] [(EE[0][j]):(EE[1][j]+1)] / med,
+                                        color='k', marker='s', s=5, alpha=0.75, label='_nolegend_')
+                        plt.scatter([],[], color='k', marker='s', s=5, alpha=0.75, label='Ecl?')
                     EclFlg[k] = 1
 
 
@@ -187,16 +192,17 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/', run_dir = '/U
                    ):
                     blsPeriod[k] = blsPer
                     blsAmpl[k] = np.nanmax(blsP['power'])
-                    plt.plot([],[], ' ', label='BLS='+format(blsPer, '6.3f')+'d')
+                    if makefig:
+                        plt.plot([],[], ' ', label='BLS='+format(blsPer, '6.3f')+'d')
 
 
-            plt.title(files_i[k].split('/')[-1] + ' k='+str(k), fontsize=12)
-            plt.ylabel('Flux')
-            plt.xlabel('BJD - 2457000 (days)')
-            plt.legend(fontsize=10)
-            plt.savefig(run_dir + 'figures/' + sector + '/' + files_i[k].split('/')[-1] + '.jpeg',
-                        bbox_inches='tight', pad_inches=0.25, dpi=100)
-            plt.close()
+            if makefig:
+                plt.title(files_i[k].split('/')[-1] + ' k='+str(k), fontsize=12)
+                plt.ylabel('Flux')
+                plt.xlabel('BJD - 2457000 (days)')
+                plt.legend(fontsize=10)
+                plt.savefig(figname, bbox_inches='tight', pad_inches=0.25, dpi=100)
+                plt.close()
 
 
 
