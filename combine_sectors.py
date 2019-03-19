@@ -57,7 +57,7 @@ def RunSectors(tess_dir = '/Users/james/Desktop/tess/', run_dir = '/Users/james/
             rot_out = rot_out_k
         else:
             rot_out = pd.concat([rot_out, rot_out_k], ignore_index=True, sort=False)
-    rot_out.to_csv(run_dir + 'longerP_flare_out.csv')
+    rot_out.to_csv(run_dir + 'longerP_rot_out.csv')
     return
 
 
