@@ -21,7 +21,7 @@ matplotlib.rcParams.update({'font.family':'serif'})
 ftype = '.pdf'
 
 
-def RunSectors(tess_dir = '/Users/james/Desktop/tess/', run_dir = '/Users/james/Desktop/helloTESS/', clobber=False):
+def RunSectors(tess_dir = '/Users/james/Desktop/tess/', run_dir = '/Users/james/Desktop/helloTESS/', clobber=False, Nsector=3):
     '''
     Do some simplier things on stars that are observed in mulitple sectors
 
@@ -45,7 +45,7 @@ def RunSectors(tess_dir = '/Users/james/Desktop/tess/', run_dir = '/Users/james/
     #     print(k+1, sum(Nobj > k))
     # obj[0] # example Object ID (TIC #)
 
-    o5 = np.where((Nobj > 3))[0] # was named "o5" because originally wanted Over 5 observations. Now pick other N
+    o5 = np.where((Nobj > Nsector))[0] # was named "o5" because originally wanted Over 5 observations. Now pick other N
 
     print(str(len(o5)) + ' objects with Nobs > 3 Sectors')
     for k in range(0, len(o5)):
@@ -57,7 +57,7 @@ def RunSectors(tess_dir = '/Users/james/Desktop/tess/', run_dir = '/Users/james/
             rot_out = rot_out_k
         else:
             rot_out = pd.concat([rot_out, rot_out_k], ignore_index=True, sort=False)
-    rot_out.to_csv(run_dir + 'longerP_rot_out.csv')
+    rot_out.to_csv(run_dir + '/outputs/longerP_rot_out.csv')
     return
 
 

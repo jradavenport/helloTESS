@@ -210,13 +210,13 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/', run_dir = '/U
     ALL_TIC = pd.Series(files_i).str.split('-', expand=True).iloc[:,-3].astype('int')
 
     flare_out = pd.DataFrame(data={'TIC':ALL_TIC[FL_id], 'i0':FL_t0, 'i1':FL_t1, 'med':FL_f0, 'peak':FL_f1})
-    flare_out.to_csv(run_dir + sector + '_flare_out.csv')
+    flare_out.to_csv(run_dir + 'outputs/' + sector + '_flare_out.csv')
 
     rot_out = pd.DataFrame(data={'TIC':ALL_TIC,
                                  'per':per_out, 'Pamp':per_amp, 'Pmed':per_med, 'StdLC':per_std,
                                  'acf_pk':ACF_1pk, 'acf_per':ACF_1dt,
                                  'bls_period':blsPeriod, 'bls_ampl':blsAmpl, 'ecl_flg':EclFlg})
-    rot_out.to_csv(run_dir + sector + '_rot_out.csv')
+    rot_out.to_csv(run_dir + 'outputs/' + sector + '_rot_out.csv')
 
 
 
