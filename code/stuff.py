@@ -1,6 +1,10 @@
 import numpy as np
 import pandas as pd
-
+from glob import glob
+from astropy.table import Table
+import matplotlib.pyplot as plt
+from scipy.interpolate import LSQUnivariateSpline, UnivariateSpline, splrep, splev
+import exoplanet as xo
 
 def EasyE(flux, error, N1=3, N2=1, N3=3):
     '''
@@ -16,7 +20,10 @@ def EasyE(flux, error, N1=3, N2=1, N3=3):
     '''
     
     med_i = np.nanmedian(flux)
-    sig_i = np.nanstd(flux)
+
+    # sig_i = np.nanstd(flux)
+    sig_i = np.nanmedian(pd.Series(flux).rolling(64, center=True).std())
+
     ca = flux - med_i
     cb = np.abs(flux - med_i) / sig_i
     cc = np.abs(flux - med_i) / error
@@ -36,6 +43,64 @@ def EasyE(flux, error, N1=3, N2=1, N3=3):
     istop_i = np.array(istop_i, dtype='int')
 
     return istart_i, istop_i
+
+
+def test_EB(dir='../testdata_1/'):
+    print('making test EB plots for files in ' + dir)
+    files = glob(dir + '/*.fits', recursive=True)
+    for k in range(len(files)):
+        tbl = Table.read(files[k], format='fits')
+        df_tbl = tbl.to_pandas()
+
+        AOK = (tbl['QUALITY'] == 0) & ((tbl['TIME'] < 1347) | (tbl['TIME'] > 1350))
+
+        # do a running median for a basic smooth
+        smo = df_tbl['PDCSAP_FLUX'][AOK].rolling(128, center=True).median()
+
+        med = np.nanmedian(smo)
+        # Smed = np.nanmedian(tbl['SAP_FLUX'][AOK])
+        SOK = np.isfinite(smo)
+
+        plt.figure(figsize=(12, 9))
+        plt.errorbar(tbl['TIME'][AOK], tbl['PDCSAP_FLUX'][AOK] / med, yerr=tbl['PDCSAP_FLUX_ERR'][AOK] / med,
+                     linestyle=None, alpha=0.15, label='PDC_FLUX')
+        plt.plot(tbl['TIME'][AOK], smo / med, label='128pt MED')
+
+
+        spl = IRLSSpline(df_tbl['TIME'].values[AOK][SOK], smo[SOK] / med, df_tbl['PDCSAP_FLUX_ERR'].values[AOK][SOK] / med)
+        plt.plot(df_tbl['TIME'][AOK][SOK], spl)
+
+
+        EE = EasyE(tbl['PDCSAP_FLUX'][AOK][SOK]/med - spl,
+                   df_tbl['PDCSAP_FLUX_ERR'][AOK][SOK] / med, N1=5, N2=3, N3=2)
+
+        # plt.errorbar(tbl['TIME'][AOK], tbl['SAP_FLUX'][AOK] / Smed, yerr=tbl['SAP_FLUX_ERR'][AOK] / Smed,
+        #              linestyle=None, alpha=0.25, label='SAP_FLUX')
+
+        if (np.size(EE) > 0):
+            for j in range(len(EE[0])):
+                plt.scatter(tbl['TIME'][AOK][SOK][(EE[0][j]):(EE[1][j] + 1)],
+                            tbl['PDCSAP_FLUX'][AOK][SOK][(EE[0][j]):(EE[1][j] + 1)] / med,
+                            color='k', marker='s', s=5, alpha=0.75, label='_nolegend_')
+
+            plt.scatter([], [], color='k', marker='s', s=5, alpha=0.75, label='Ecl?')
+            # EclFlg[k] = 1
+
+        # skw = pd.Series(smo).rolling(512, center=True).skew()
+        # dips = (skw < (np.nanmedian(skw) -1. * np.nanstd(skw)))
+        # if (sum(dips) > 0):
+        #     plt.scatter(tbl['TIME'][AOK][dips], smo[dips] / med, c='purple', marker='o', s=13, label='skew')
+
+        plt.title(files[k].split('/')[-1] + ' k=' + str(k), fontsize=12)
+        plt.ylabel('Flux')
+        plt.xlabel('BJD - 2457000 (days)')
+        plt.legend(fontsize=10)
+        # plt.show()
+
+        plt.savefig(files[k] + '.jpeg', bbox_inches='tight', pad_inches=0.25, dpi=200)
+        plt.close()
+
+    return
 
 
 def FINDflare(flux, error, N1=3, N2=1, N3=3,
@@ -132,3 +197,84 @@ def FINDflare(flux, error, N1=3, N2=1, N3=3,
         for k in range(len(istart_i)):
             bin_out[istart_i[k]:istop_i[k]+1] = 1
         return bin_out
+
+
+
+def IRLSSpline(time, flux, error, Q=400.0, ksep=0.4, numpass=10, order=3, debug=False):
+    '''
+    IRLS = Iterative Re-weight Least Squares
+    Do a multi-pass, weighted spline fit, with iterative down-weighting of
+    outliers. This is a simple, highly flexible approach. Suspiciously good
+    at times...
+
+    Originally described by DFM: https://github.com/dfm/untrendy
+    Likley not adequately reproduced here.
+
+    uses scipy.interpolate.LSQUnivariateSpline
+
+    Parameters
+    ----------
+    time : 1-d numpy array
+    flux : 1-d numpy array
+    error : 1-d numpy array
+    Q : float, optional
+        the penalty factor to give outlier data in subsequent passes
+        (deafult is 400.0)
+    ksep : float, optional
+        the spline knot separation, in units of the light curve time
+        (default is 0.07)
+    numpass : int, optional
+        the number of passes to take over the data (default is 5)
+    order : int, optional
+        the spline order to use (default is 3)
+    debug : bool, optional
+        used to print out troubleshooting things (default=False)
+
+    Returns
+    -------
+    the final spline model
+    '''
+
+    weight = 1. / (error**2.0)
+
+    knots = np.arange(np.nanmin(time) + 3*ksep, np.nanmax(time) - 2*ksep, ksep)
+
+    # s1 = UnivariateSpline(time, flux, w=weight, k=3)
+    # knots = s1.get_knots()
+
+
+    if debug is True:
+        print('IRLSSpline: knots: ', np.shape(knots))
+        print('IRLSSpline: time: ', np.shape(time), np.nanmin(time), time[0], np.nanmax(time), time[-1])
+        print('IRLSSpline: <weight> = ', np.mean(weight))
+        print(np.where((time[1:] - time[:-1] < 0))[0])
+
+        plt.figure()
+        plt.errorbar(time, flux, error)
+        plt.scatter(knots, knots*0. + np.median(flux))
+        plt.show()
+
+    for k in range(numpass):
+        # print('IRLSSpline: k=', k)
+
+        spl = LSQUnivariateSpline(time, flux, knots, k=order, check_finite=True, w=weight)
+
+        # spl = UnivariateSpline(time, flux, w=weight, k=order, check_finite=True,
+        #                        s=len(flux)*2.)
+        # spl_model = splrep(time, flux, k=order, w=weight)
+
+        chisq = ((flux - spl(time))**2.) / (error**2.0)
+
+        weight = Q / ((error**2.0) * (chisq + Q))
+
+    return spl(time)
+
+
+
+
+if __name__ == "__main__":
+    '''
+      let this file be called from the terminal directly. e.g.:
+      $ python analysis.py
+    '''
+    test_EB()
