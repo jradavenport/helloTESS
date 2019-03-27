@@ -122,8 +122,8 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
                 SOK = np.isfinite(smo)
 
                 # do some SPLINE'ing
-                spl = IRLSSpline(df_tbl['TIME'].values[AOK][SOK], df_tbl['PDCSAP_FLUX'].values[AOK][SOK] / med,
-                                 df_tbl['PDCSAP_FLUX_ERR'].values[AOK][SOK] / med)
+                # spl = IRLSSpline(df_tbl['TIME'].values[AOK][SOK], df_tbl['PDCSAP_FLUX'].values[AOK][SOK] / med,
+                #                  df_tbl['PDCSAP_FLUX_ERR'].values[AOK][SOK] / med)
 
                 # flares
                 FL = FINDflare((df_tbl['PDCSAP_FLUX'][AOK][SOK] - smo[SOK])/med,
