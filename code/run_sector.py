@@ -97,12 +97,23 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
         if tbl != -1:
             # make harsh quality cuts, and chop out a known bad window of time (might add more later)
             AOK = (tbl['QUALITY'] == 0) & ((tbl['TIME'] < 1347) | (tbl['TIME'] > 1350))
+            med = np.nanmedian(df_tbl['PDCSAP_FLUX'][AOK])
+
+            # ACF w/ Exoplanet package
+            acf = xo.autocorr_estimator(tbl['TIME'][AOK], tbl['PDCSAP_FLUX'][AOK] / med,
+                                        yerr=tbl['PDCSAP_FLUX_ERR'][AOK] / med,
+                                        min_period=0.1, max_period=27, max_peaks=2)
+            if len(acf['peaks']) > 0:
+                ACF_1dt[k] = acf['peaks'][0]['period']
+                ACF_1pk[k] = acf['autocorr'][1][np.where((acf['autocorr'][0] == acf['peaks'][0]['period']))[0]][0]
+
+                s_window = int(ACF_1dt[k] / np.abs(np.nanmedian(np.diff(tbl['TIME'])))) / 5.
+            else:
+                s_window = 128
 
             # do a running median for a basic smooth
-            smo = (df_tbl['PDCSAP_FLUX'][AOK].rolling(128, center=True).median() + df_tbl['PDCSAP_FLUX'][AOK].rolling(256, center=True).median()) / 2.
-            med = np.nanmedian(smo)
-
-            # Smed = np.nanmedian(tbl['SAP_FLUX'][AOK])
+            # smo = (df_tbl['PDCSAP_FLUX'][AOK].rolling(128, center=True).median() + df_tbl['PDCSAP_FLUX'][AOK].rolling(256, center=True).median()) / 2.
+            smo = df_tbl['PDCSAP_FLUX'][AOK].rolling(s_window, center=True).median()
 
             # make an output plot for every file
             figname = run_dir + 'figures/' + sector + '/' + files_i[k].split('/')[-1] + '.jpeg' #run_dir + 'figures/longerP/' + TICs[0].split('-')[2] + '.jpeg'
@@ -114,6 +125,11 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
                              linestyle=None, alpha=0.15, label='PDC_FLUX')
                 plt.plot(tbl['TIME'][AOK], smo/med, label='128pt MED')
 
+                if (ACF_1dt[k] > 0):
+                    plt.plot(tbl['TIME'][AOK],
+                             np.nanstd(smo / med) * ACF_1pk[k] * np.sin(tbl['TIME'][AOK] / ACF_1dt[k] * 2 * np.pi) + 1,
+                             label='ACF=' + format(ACF_1dt[k], '6.3f') + 'd, pk=' + format(ACF_1pk[k], '6.3f'), lw=2,
+                             alpha=0.7)
                 # plt.errorbar(tbl['TIME'][AOK], tbl['SAP_FLUX'][AOK]/Smed, yerr=tbl['SAP_FLUX_ERR'][AOK]/Smed,
                 #              linestyle=None, alpha=0.25, label='SAP_FLUX')
 
@@ -166,20 +182,6 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
                     if makefig:
                         plt.plot(df_tbl['TIME'][AOK], LSmodel,
                                  label='L-S P='+format(1./best_frequency, '6.3f')+'d, pk='+format(np.nanmax(power), '6.3f'))
-
-
-                # ACF w/ Exoplanet package
-                acf = xo.autocorr_estimator(tbl['TIME'][AOK], tbl['PDCSAP_FLUX'][AOK]/med,
-                                            yerr=tbl['PDCSAP_FLUX_ERR'][AOK]/med,
-                                            min_period=0.1, max_period=40, max_peaks=2)
-                if len(acf['peaks']) > 0:
-                    ACF_1dt[k] = acf['peaks'][0]['period']
-                    ACF_1pk[k] = acf['autocorr'][1][np.where((acf['autocorr'][0] == acf['peaks'][0]['period']))[0]][0]
-
-                if (ACF_1dt[k] > 0) & makefig:
-                    plt.plot(tbl['TIME'][AOK],
-                             np.nanstd(smo/med) * ACF_1pk[k] * np.sin(tbl['TIME'][AOK] / ACF_1dt[k] * 2 * np.pi) + 1,
-                             label = 'ACF=' + format(ACF_1dt[k], '6.3f') + 'd, pk=' + format(ACF_1pk[k], '6.3f'), lw=2, alpha=0.7)
 
 
                 # here is where a simple Eclipse (EB) finder goes
