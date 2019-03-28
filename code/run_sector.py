@@ -69,7 +69,8 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
     blsPeriod = np.zeros(len(files_i)) -1
     blsAmpl = np.zeros(len(files_i)) -1
 
-    EclFlg = np.zeros(len(files_i)) -1
+    EclNum = np.zeros(len(files_i)) -1
+    EclDep = np.zeros(len(files_i)) -1
 
     FL_id = np.array([])
     FL_t0 = np.array([])
@@ -98,7 +99,7 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
             AOK = (tbl['QUALITY'] == 0) & ((tbl['TIME'] < 1347) | (tbl['TIME'] > 1350))
 
             # do a running median for a basic smooth
-            smo = (df_tbl['PDCSAP_FLUX'][AOK].rolling(128, center=True).median() + df_tbl['PDCSAP_FLUX'][AOK].rolling(256, center=True).median() + df_tbl['PDCSAP_FLUX'][AOK].rolling(1024, center=True).median()) / 3.
+            smo = (df_tbl['PDCSAP_FLUX'][AOK].rolling(128, center=True).median() + df_tbl['PDCSAP_FLUX'][AOK].rolling(256, center=True).median()) / 2.
             med = np.nanmedian(smo)
 
             # Smed = np.nanmedian(tbl['SAP_FLUX'][AOK])
@@ -188,7 +189,7 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
                            df_tbl['PDCSAP_FLUX_ERR'][AOK][SOK] / med, N1=5, N2=3, N3=2)
 
                 if (np.size(EE) > 0):
-                    # test if EE outputs look periodic-ish, or just junk
+                    # need to test if EE outputs look periodic-ish, or just junk
                     noE = np.arange(len(SOK))
 
                     for j in range(len(EE[0])):
@@ -198,10 +199,14 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
                                         color='k', marker='s', s=5, alpha=0.75, label='_nolegend_')
 
                         noE[(EE[0][j]):(EE[1][j]+1)] = -1
-                    if makefig:
-                        plt.scatter([],[], color='k', marker='s', s=5, alpha=0.75, label='Ecl?')
 
-                    EclFlg[k] = 1
+                        EclDep[k] = EclDep[k] + np.nanmin(df_tbl['PDCSAP_FLUX'][AOK][SOK][(EE[0][j]):(EE[1][j] + 1)] / med  - smo[SOK][(EE[0][j]):(EE[1][j] + 1)]/med)
+
+                    if makefig:
+                        plt.scatter([],[], color='k', marker='s', s=5, alpha=0.75, label='Ecl: '+str(len(EE[0])))
+
+                    EclNum[k] = len(EE[0])
+                    EclDep[k] = EclDep[k] / np.float(len(EE[0]))
 
                     okE = np.where((noE > -1))[0]
                 else:
@@ -294,9 +299,10 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
     flare_out.to_csv(run_dir + 'outputs/' + sector + '_flare_out.csv')
 
     rot_out = pd.DataFrame(data={'TIC':ALL_TIC,
-                                 'per':per_out, 'Pamp':per_amp, 'Pmed':per_med, 'StdLC':per_std,
+                                 'LSper':per_out, 'LSamp':per_amp, 'LSmed':per_med, 'LSstd':per_std,
                                  'acf_pk':ACF_1pk, 'acf_per':ACF_1dt,
-                                 'bls_period':blsPeriod, 'bls_ampl':blsAmpl, 'ecl_flg':EclFlg})
+                                 'bls_per':blsPeriod, 'bls_ampl':blsAmpl,
+                                 'ecl_num':EclNum, 'ecl_dep':EclDep})
     rot_out.to_csv(run_dir + 'outputs/' + sector + '_rot_out.csv')
 
 
