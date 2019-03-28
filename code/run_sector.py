@@ -107,7 +107,7 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
                 ACF_1dt[k] = acf['peaks'][0]['period']
                 ACF_1pk[k] = acf['autocorr'][1][np.where((acf['autocorr'][0] == acf['peaks'][0]['period']))[0]][0]
 
-                s_window = int(ACF_1dt[k] / np.abs(np.nanmedian(np.diff(tbl['TIME'])))) / 5.
+                s_window = int(ACF_1dt[k] / np.abs(np.nanmedian(np.diff(tbl['TIME']))) / 5.)
             else:
                 s_window = 128
 
