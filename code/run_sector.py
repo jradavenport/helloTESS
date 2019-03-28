@@ -107,7 +107,7 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
                 ACF_1dt[k] = acf['peaks'][0]['period']
                 ACF_1pk[k] = acf['autocorr'][1][np.where((acf['autocorr'][0] == acf['peaks'][0]['period']))[0]][0]
 
-                s_window = int(ACF_1dt[k] / np.abs(np.nanmedian(np.diff(tbl['TIME']))) / 5.)
+                s_window = int(ACF_1dt[k] / np.abs(np.nanmedian(np.diff(tbl['TIME']))) / 6.)
             else:
                 s_window = 128
 
@@ -123,7 +123,7 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
                 plt.figure(figsize=(12,9))
                 plt.errorbar(tbl['TIME'][AOK], tbl['PDCSAP_FLUX'][AOK]/med, yerr=tbl['PDCSAP_FLUX_ERR'][AOK]/med,
                              linestyle=None, alpha=0.15, label='PDC_FLUX')
-                plt.plot(tbl['TIME'][AOK], smo/med, label='128pt MED')
+                plt.plot(tbl['TIME'][AOK], smo/med, label=str(s_window)+'pt MED')
 
                 if (ACF_1dt[k] > 0):
                     plt.plot(tbl['TIME'][AOK],
