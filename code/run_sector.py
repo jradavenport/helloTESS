@@ -84,6 +84,8 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
 
     for k in range(len(files_i)):
         # print(files_i[k])
+        if k % 1000 == 0:
+            print(str(k) + '/'+str(len(files_i)))
 
         tbl = -1
         df_tbl = -1
