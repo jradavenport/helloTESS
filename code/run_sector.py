@@ -218,58 +218,59 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
 
                 # do some GP'ing, from:
                 # https://exoplanet.dfm.io/en/stable/tutorials/stellar-variability/
-                '''
-                with pm.Model() as model:
 
-                    # The mean flux of the time series
-                    mean = pm.Normal("mean", mu=1.0, sd=10.0)
+                # if False:
+                #     with pm.Model() as model:
+                #
+                #         # The mean flux of the time series
+                #         mean = pm.Normal("mean", mu=1.0, sd=10.0)
+                #
+                #         # A jitter term describing excess white noise
+                #         # print(AOK.shape, SOK.shape, okE.shape)
+                #         yerr = df_tbl['PDCSAP_FLUX_ERR'].values[AOK][SOK] / med
+                #         y = df_tbl['PDCSAP_FLUX'].values[AOK][SOK] / med
+                #         x = df_tbl['TIME'].values[AOK][SOK]
+                #
+                #         logs2 = pm.Normal("logs2", mu=2 * np.log(np.min(yerr)), sd=5.0)
+                #
+                #         # The parameters of the RotationTerm kernel
+                #         logamp = pm.Normal("logamp", mu=np.log(np.var(y)), sd=5.0)
+                #         logperiod = pm.Normal("logperiod", mu=np.log(acf['peaks'][0]['period']), sd=5.0)
+                #         logQ0 = pm.Normal("logQ0", mu=1.0, sd=10.0)
+                #         logdeltaQ = pm.Normal("logdeltaQ", mu=2.0, sd=10.0)
+                #         mix = pm.Uniform("mix", lower=0, upper=1.0)
+                #
+                #         # Track the period as a deterministic
+                #         period = pm.Deterministic("period", tt.exp(logperiod))
+                #
+                #         # Set up the Gaussian Process model
+                #         kernel = xo.gp.terms.RotationTerm(
+                #             log_amp=logamp,
+                #             period=period,
+                #             log_Q0=logQ0,
+                #             log_deltaQ=logdeltaQ,
+                #             mix=mix
+                #         )
+                #         gp = xo.gp.GP(kernel, x, yerr ** 2 + tt.exp(logs2), J=4)
+                #
+                #         # Compute the Gaussian Process likelihood and add it into the
+                #         # the PyMC3 model as a "potential"
+                #         pm.Potential("loglike", gp.log_likelihood(y - mean))
+                #
+                #         # Compute the mean model prediction for plotting purposes
+                #         pm.Deterministic("pred", gp.predict())
+                #
+                #         # Optimize to find the maximum a posteriori parameters
+                #         map_soln = xo.optimize(start=model.test_point)
+                #
+                #     gpspl = map_soln["pred"]
+                #     plt.plot(df_tbl['TIME'].values[AOK][SOK], gpspl+1, label='GP')
 
-                    # A jitter term describing excess white noise
-                    # print(AOK.shape, SOK.shape, okE.shape)
-                    yerr = df_tbl['PDCSAP_FLUX_ERR'].values[AOK][SOK] / med
-                    y = df_tbl['PDCSAP_FLUX'].values[AOK][SOK] / med
-                    x = df_tbl['TIME'].values[AOK][SOK]
-
-                    logs2 = pm.Normal("logs2", mu=2 * np.log(np.min(yerr)), sd=5.0)
-
-                    # The parameters of the RotationTerm kernel
-                    logamp = pm.Normal("logamp", mu=np.log(np.var(y)), sd=5.0)
-                    logperiod = pm.Normal("logperiod", mu=np.log(acf['peaks'][0]['period']), sd=5.0)
-                    logQ0 = pm.Normal("logQ0", mu=1.0, sd=10.0)
-                    logdeltaQ = pm.Normal("logdeltaQ", mu=2.0, sd=10.0)
-                    mix = pm.Uniform("mix", lower=0, upper=1.0)
-
-                    # Track the period as a deterministic
-                    period = pm.Deterministic("period", tt.exp(logperiod))
-
-                    # Set up the Gaussian Process model
-                    kernel = xo.gp.terms.RotationTerm(
-                        log_amp=logamp,
-                        period=period,
-                        log_Q0=logQ0,
-                        log_deltaQ=logdeltaQ,
-                        mix=mix
-                    )
-                    gp = xo.gp.GP(kernel, x, yerr ** 2 + tt.exp(logs2), J=4)
-
-                    # Compute the Gaussian Process likelihood and add it into the
-                    # the PyMC3 model as a "potential"
-                    pm.Potential("loglike", gp.log_likelihood(y - mean))
-
-                    # Compute the mean model prediction for plotting purposes
-                    pm.Deterministic("pred", gp.predict())
-
-                    # Optimize to find the maximum a posteriori parameters
-                    map_soln = xo.optimize(start=model.test_point)
-
-                gpspl = map_soln["pred"]
-                plt.plot(df_tbl['TIME'].values[AOK][SOK], gpspl+1, label='GP')
-                ''';
 
 
                 # add BLS
                 bls = BoxLeastSquares(df_tbl['TIME'][AOK][SOK], smo[SOK]/med, dy=df_tbl['PDCSAP_FLUX_ERR'][AOK][SOK]/med)
-                blsP = bls.autopower([0.025, 0.1], method='fast', objective='snr',
+                blsP = bls.autopower([0.05], method='fast', objective='snr',
                                      minimum_n_transit=2, minimum_period=0.2)
 
                 blsPer = blsP['period'][np.argmax(blsP['power'])]
