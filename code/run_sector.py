@@ -13,8 +13,8 @@ from astropy.table import Table
 import astropy.io.fits as fits
 from astropy.stats import LombScargle, BoxLeastSquares
 import exoplanet as xo
-import pymc3 as pm
-import theano.tensor as tt
+# import pymc3 as pm
+# import theano.tensor as tt
 from stuff import FINDflare, EasyE, IRLSSpline
 
 matplotlib.rcParams.update({'font.size':18})
@@ -44,7 +44,7 @@ ftype = '.pdf'
 
 def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
                   run_dir = '/Users/james/Desktop/helloTESS/',
-                  clobber=False):
+                  clobber=True):
     '''
     Run the basic set of tools on every light curve
 
@@ -104,7 +104,7 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
             # ACF w/ Exoplanet package
             acf = xo.autocorr_estimator(tbl['TIME'][AOK], tbl['PDCSAP_FLUX'][AOK] / med,
                                         yerr=tbl['PDCSAP_FLUX_ERR'][AOK] / med,
-                                        min_period=0.1, max_period=27, max_peaks=2)
+                                        min_period=0.07, max_period=27, max_peaks=2)
             if len(acf['peaks']) > 0:
                 ACF_1dt[k] = acf['peaks'][0]['period']
                 ACF_1pk[k] = acf['autocorr'][1][np.where((acf['autocorr'][0] == acf['peaks'][0]['period']))[0]][0]
@@ -179,7 +179,7 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
                 per_med[k] = np.nanmedian(power)
                 per_std[k] = np.nanstd(smo[SOK]/med)
 
-                if np.nanmax(power) > 0.2:
+                if np.nanmax(power) > 0.05:
                     LSmodel = LS.model(df_tbl['TIME'][AOK], best_frequency)
                     if makefig:
                         plt.plot(df_tbl['TIME'][AOK], LSmodel,
@@ -190,10 +190,13 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
                 # EE = EasyE(smo[SOK]/med, df_tbl['PDCSAP_FLUX_ERR'][AOK][SOK]/med,
                 #            N1=5, N2=3, N3=2)
                 EE = EasyE(df_tbl['PDCSAP_FLUX'][AOK][SOK]/med - smo[SOK]/med,
-                           df_tbl['PDCSAP_FLUX_ERR'][AOK][SOK] / med, N1=5, N2=3, N3=2)
+                           df_tbl['PDCSAP_FLUX_ERR'][AOK][SOK] / med, N1=5, N2=2.5, N3=2.5)
+                # N1 datapoints long, and
+                # N2 times below the stddev, and
+                # N3 times below the error
 
                 if (np.size(EE) > 0):
-                    # need to test if EE outputs look periodic-ish, or just junk
+                    # need to test if EE outputs look periodic-ish, or just junk...
                     noE = np.arange(len(SOK))
 
                     for j in range(len(EE[0])):
@@ -270,13 +273,13 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
 
                 # add BLS
                 bls = BoxLeastSquares(df_tbl['TIME'][AOK][SOK], smo[SOK]/med, dy=df_tbl['PDCSAP_FLUX_ERR'][AOK][SOK]/med)
-                blsP = bls.autopower([0.05], method='fast', objective='snr',
-                                     minimum_n_transit=2, minimum_period=0.2)
+                blsP = bls.autopower([0.02, 0.05, 0.1], method='fast', objective='snr',
+                                     minimum_n_transit=2, minimum_period=0.1)
 
                 blsPer = blsP['period'][np.argmax(blsP['power'])]
 
-                if ((3*np.nanstd(blsP['power']) + np.nanmedian(blsP['power']) < np.nanmax(blsP['power'])) &
-                    (np.nanmax(blsP['power']) > 25.) &
+                if ((np.nanmax(blsP['power']) > 2.5*np.nanstd(blsP['power']) + np.nanmedian(blsP['power']) ) &
+                    # (np.nanmax(blsP['power']) > 10.) &
                     (blsPer < 0.95 * np.nanmax(blsP['period']))
                    ):
                     blsPeriod[k] = blsPer
@@ -294,6 +297,11 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
                 # plt.show()
                 plt.savefig(figname, bbox_inches='tight', pad_inches=0.25, dpi=100)
                 plt.close()
+
+        # reset the data again, not needed, but juuuuuust in case
+        tbl = -1
+        df_tbl = -1
+
 
 
 

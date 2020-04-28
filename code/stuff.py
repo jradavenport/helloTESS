@@ -22,7 +22,7 @@ def EasyE(flux, error, N1=3, N2=1, N3=3):
     med_i = np.nanmedian(flux)
 
     # sig_i = np.nanstd(flux)
-    sig_i = np.nanmedian(pd.Series(flux).rolling(64, center=True).std())
+    sig_i = np.nanmedian(pd.Series(flux).rolling(15, center=True).std())
 
     ca = flux - med_i
     cb = np.abs(flux - med_i) / sig_i
