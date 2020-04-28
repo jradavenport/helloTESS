@@ -11,7 +11,7 @@ from scipy.optimize import curve_fit
 
 from astropy.table import Table
 import astropy.io.fits as fits
-from astropy.stats import LombScargle, BoxLeastSquares
+from astropy.timeseries import LombScargle, BoxLeastSquares
 import exoplanet as xo
 # import pymc3 as pm
 # import theano.tensor as tt
@@ -273,8 +273,8 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
 
                 # add BLS
                 bls = BoxLeastSquares(df_tbl['TIME'][AOK][SOK], smo[SOK]/med, dy=df_tbl['PDCSAP_FLUX_ERR'][AOK][SOK]/med)
-                blsP = bls.autopower([0.02, 0.05], method='fast', objective='snr',
-                                     minimum_n_transit=2, minimum_period=0.1)
+                blsP = bls.autopower([0.025], method='fast', objective='snr',
+                                     minimum_n_transit=3, minimum_period=0.1)
 
                 blsPer = blsP['period'][np.argmax(blsP['power'])]
 
