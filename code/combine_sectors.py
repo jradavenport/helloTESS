@@ -21,14 +21,14 @@ matplotlib.rcParams.update({'font.family':'serif'})
 ftype = '.pdf'
 
 
-def RunSectors(tess_dir = '/Users/james/Desktop/tess/', run_dir = '/Users/james/Desktop/helloTESS/', clobber=False, Nsector=3):
+def RunSectors(tess_dir = '/Users/james/Desktop/tess/', run_dir = '/Users/james/Desktop/helloTESS/', clobber=True, Nsector=3):
     '''
     Do some simplier things on stars that are observed in mulitple sectors
 
     should probably be combined with run_sector.py.... but oh well for now!
     '''
 
-    sectors = ['sector001', 'sector002', 'sector003', 'sector004', 'sector005', 'sector006', 'sector007']
+    sectors = ['sector001', 'sector002', 'sector003', 'sector004', 'sector005', 'sector006', 'sector007', 'sector008']
 
     # just in case glob wants to re-order things, be sure grab them in Sector order
     files = []
