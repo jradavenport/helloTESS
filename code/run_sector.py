@@ -6,6 +6,7 @@ import matplotlib
 import os
 from glob import glob
 import sys
+import gc
 
 from scipy.optimize import curve_fit
 
@@ -82,6 +83,8 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
     if not os.path.isdir(run_dir + 'figures/' + sector):
         os.makedirs(run_dir + 'figures/' + sector)
 
+    plt.ioff()
+    
     for k in range(len(files_i)):
         # print(files_i[k])
         if k % 1000 == 0:
@@ -304,6 +307,7 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
             del tbl
             del df_tbl
             del AOK
+            gc.collect()
 
 
 
