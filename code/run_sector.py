@@ -273,8 +273,9 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
 
                 # add BLS
                 bls = BoxLeastSquares(df_tbl['TIME'][AOK][SOK], smo[SOK]/med, dy=df_tbl['PDCSAP_FLUX_ERR'][AOK][SOK]/med)
-                blsP = bls.autopower([0.025], method='fast', objective='snr',
-                                     minimum_n_transit=3, minimum_period=0.1)
+                blsP = bls.autopower([0.05], method='fast', objective='snr',
+                                     minimum_n_transit=3, minimum_period=0.1, maximum_period=15,
+                                     frequency_factor=1.5)
 
                 blsPer = blsP['period'][np.argmax(blsP['power'])]
 
@@ -285,7 +286,7 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
                     blsPeriod[k] = blsPer
                     blsAmpl[k] = np.nanmax(blsP['power'])
                     if makefig:
-                        plt.plot([],[], ' ', label='BLS='+format(blsPer, '6.3f')+'d')
+                        plt.plot([],[], ' ', label='BLS='+format(blsPer, '6.3f')+'d, snr='+format(np.nanmax(blsP['power']), '6.3f'))
 
 
             if makefig:
