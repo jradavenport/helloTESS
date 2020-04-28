@@ -84,7 +84,7 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
         os.makedirs(run_dir + 'figures/' + sector)
 
     plt.ioff()
-    
+
     for k in range(len(files_i)):
         # print(files_i[k])
         if k % 1000 == 0:
@@ -93,7 +93,7 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
         tbl = -1
         df_tbl = -1
         try:
-            tbl = Table.read(files_i[k], format='fits', memap=False)
+            tbl = Table.read(files_i[k], format='fits')
 
             df_tbl = tbl.to_pandas()
         except (OSError, KeyError, TypeError, ValueError):
