@@ -44,7 +44,7 @@ ftype = '.pdf'
 
 def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
                   run_dir = '/Users/james/Desktop/helloTESS/',
-                  clobber=True):
+                  clobber=False):
     '''
     Run the basic set of tools on every light curve
 
@@ -90,7 +90,8 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
         tbl = -1
         df_tbl = -1
         try:
-            tbl = Table.read(files_i[k], format='fits')
+            tbl = Table.read(files_i[k], format='fits', memap=False)
+
             df_tbl = tbl.to_pandas()
         except (OSError, KeyError, TypeError, ValueError):
             print('k=' + str(k) + ' bad file: ' + files_i[k])
@@ -300,8 +301,9 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
                 plt.close()
 
         # reset the data again, not needed, but juuuuuust in case
-        tbl = -1
-        df_tbl = -1
+            del tbl
+            del df_tbl
+            del AOK
 
 
 
