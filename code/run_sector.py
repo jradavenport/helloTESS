@@ -273,7 +273,7 @@ def BasicActivity(sector, tess_dir = '/Users/james/Desktop/tess/',
 
                 # add BLS
                 bls = BoxLeastSquares(df_tbl['TIME'][AOK][SOK], smo[SOK]/med, dy=df_tbl['PDCSAP_FLUX_ERR'][AOK][SOK]/med)
-                blsP = bls.autopower([0.02, 0.05, 0.1], method='fast', objective='snr',
+                blsP = bls.autopower([0.02, 0.05], method='fast', objective='snr',
                                      minimum_n_transit=2, minimum_period=0.1)
 
                 blsPer = blsP['period'][np.argmax(blsP['power'])]
